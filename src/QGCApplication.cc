@@ -57,7 +57,6 @@
 #include "FirmwarePluginManager.h"
 #include "MultiVehicleManager.h"
 #include "Vehicle.h"
-#include "MavlinkQmlSingleton.h"
 #include "JoystickConfigController.h"
 #include "JoystickManager.h"
 #include "QmlObjectListModel.h"
@@ -128,11 +127,6 @@ static QObject* screenToolsControllerSingletonFactory(QQmlEngine*, QJSEngine*)
 {
     ScreenToolsController* screenToolsController = new ScreenToolsController;
     return screenToolsController;
-}
-
-static QObject* mavlinkQmlSingletonFactory(QQmlEngine*, QJSEngine*)
-{
-    return new MavlinkQmlSingleton;
 }
 
 static QObject* qgroundcontrolQmlGlobalSingletonFactory(QQmlEngine*, QJSEngine*)
@@ -311,8 +305,20 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     }
 #endif
 
+    // gstreamer debug settings
+    QString savePath, gstDebugLevel;
+    if (settings.contains(AppSettings::savePathName)) {
+         savePath = settings.value("SavePath").toString() + "/Logs/gst"; // hardcode log path here, appsetting is not available yet
+         if (!QDir(savePath).exists()) {
+             QDir().mkdir(savePath);
+         }
+    }
+    if (settings.contains(AppSettings::gstDebugName)) {
+        gstDebugLevel = "*:" + settings.value("GstreamerDebugLevel").toString();
+    }
+
     // Initialize Video Streaming
-    initializeVideoStreaming(argc, argv);
+    initializeVideoStreaming(argc, argv, savePath.toUtf8().data(), gstDebugLevel.toUtf8().data());
 
     _toolbox = new QGCToolbox(this);
     _toolbox->setChildToolboxes();
@@ -392,7 +398,6 @@ void QGCApplication::_initCommon(void)
     // Register Qml Singletons
     qmlRegisterSingletonType<QGroundControlQmlGlobal>   ("QGroundControl",                          1, 0, "QGroundControl",         qgroundcontrolQmlGlobalSingletonFactory);
     qmlRegisterSingletonType<ScreenToolsController>     ("QGroundControl.ScreenToolsController",    1, 0, "ScreenToolsController",  screenToolsControllerSingletonFactory);
-    qmlRegisterSingletonType<MavlinkQmlSingleton>       ("QGroundControl.Mavlink",                  1, 0, "Mavlink",                mavlinkQmlSingletonFactory);
 }
 
 bool QGCApplication::_initForNormalAppBoot(void)

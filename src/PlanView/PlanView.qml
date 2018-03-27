@@ -23,7 +23,6 @@ import QGroundControl.Controls      1.0
 import QGroundControl.FactSystem    1.0
 import QGroundControl.FactControls  1.0
 import QGroundControl.Palette       1.0
-import QGroundControl.Mavlink       1.0
 import QGroundControl.Controllers   1.0
 
 /// Mission Editor
@@ -53,6 +52,7 @@ QGCView {
     property bool   _singleComplexItem:         _missionController.complexMissionItemNames.length === 1
     property real   _toolbarHeight:             _qgcView.height - ScreenTools.availableHeight
     property int    _editingLayer:              _layerMission
+    property int    _toolStripBottom:           toolStrip.height + toolStrip.y
 
     readonly property int       _layerMission:              1
     readonly property int       _layerGeoFence:             2
@@ -83,7 +83,7 @@ QGCView {
     property bool _firstLoadComplete:           false
 
     MapFitFunctions {
-        id:                         mapFitFunctions
+        id:                         mapFitFunctions  // The name for this id cannot be changed without breaking references outside of this code. Beware!
         map:                        editorMap
         usePlannedHomePosition:     true
         planMasterController:       _planMasterController
@@ -161,7 +161,15 @@ QGCView {
             _missionController.setCurrentPlanViewIndex(0, true)
         }
 
+        function waitingOnDataMessage() {
+            _qgcView.showMessage(qsTr("Unable to Save/Upload"), qsTr("Plan is waiting on terrain data from server for correct altitude values."), StandardButton.Ok)
+        }
+
         function upload() {
+            if (!readyForSaveSend()) {
+                waitingOnDataMessage()
+                return
+            }
             if (_activeVehicle && _activeVehicle.armed && _activeVehicle.flightMode === _activeVehicle.missionFlightMode) {
                 _qgcView.showDialog(activeMissionUploadDialogComponent, qsTr("Plan Upload"), _qgcView.showDialogDefaultWidth, StandardButton.Cancel)
             } else {
@@ -173,14 +181,22 @@ QGCView {
             fileDialog.title =          qsTr("Select Plan File")
             fileDialog.selectExisting = true
             fileDialog.nameFilters =    masterController.loadNameFilters
+            fileDialog.fileExtension =  QGroundControl.settingsManager.appSettings.planFileExtension
+            fileDialog.fileExtension2 = QGroundControl.settingsManager.appSettings.missionFileExtension
             fileDialog.openForLoad()
         }
 
         function saveToSelectedFile() {
+            if (!readyForSaveSend()) {
+                waitingOnDataMessage()
+                return
+            }
             fileDialog.title =          qsTr("Save Plan")
             fileDialog.plan =           true
             fileDialog.selectExisting = false
             fileDialog.nameFilters =    masterController.saveNameFilters
+            fileDialog.fileExtension =  QGroundControl.settingsManager.appSettings.planFileExtension
+            fileDialog.fileExtension2 = QGroundControl.settingsManager.appSettings.missionFileExtension
             fileDialog.openForSave()
         }
 
@@ -189,10 +205,16 @@ QGCView {
         }
 
         function saveKmlToSelectedFile() {
+            if (!readyForSaveSend()) {
+                waitingOnDataMessage()
+                return
+            }
             fileDialog.title =          qsTr("Save KML")
             fileDialog.plan =           false
             fileDialog.selectExisting = false
             fileDialog.nameFilters =    masterController.saveKmlFilters
+            fileDialog.fileExtension =  QGroundControl.settingsManager.appSettings.kmlFileExtension
+            fileDialog.fileExtension2 = ""
             fileDialog.openForSave()
         }
     }
@@ -237,10 +259,8 @@ QGCView {
     QGCFileDialog {
         id:             fileDialog
         qgcView:        _qgcView
-        property var plan:           true
+        property bool plan: true
         folder:         QGroundControl.settingsManager.appSettings.missionSavePath
-        fileExtension:  QGroundControl.settingsManager.appSettings.planFileExtension
-        fileExtension2: QGroundControl.settingsManager.appSettings.missionFileExtension
 
         onAcceptedForSave: {
             plan ? masterController.saveToFile(file) : masterController.saveToKml(file)
@@ -262,7 +282,7 @@ QGCView {
             function accept() {
                 var toIndex = toCombo.currentIndex
 
-                if (toIndex == 0) {
+                if (toIndex === 0) {
                     toIndex = 1
                 }
                 _missionController.moveMissionItem(_moveDialogMissionItemIndex, toIndex)
@@ -327,6 +347,9 @@ QGCView {
                 //   than computing the coordinate offset.
                 anchors.fill: parent
                 onClicked: {
+                    // Take focus to close any previous editing
+                    editorMap.focus = true
+
                     //-- Don't pay attention to items beneath the toolbar.
                     var topLimit = parent.height - ScreenTools.availableHeight
                     if(mouse.y < topLimit) {
@@ -646,7 +669,7 @@ QGCView {
             anchors.bottom:     waypointValuesDisplay.visible ? waypointValuesDisplay.top : parent.bottom
             anchors.left:       parent.left
             mapControl:         editorMap
-            visible:            !ScreenTools.isTinyScreen
+            visible:            _toolStripBottom < y
         }
 
         MissionItemStatus {
@@ -657,7 +680,7 @@ QGCView {
             maxWidth:           parent.width - rightPanel.width - x
             anchors.bottom:     parent.bottom
             missionItems:       _missionController.visualItems
-            visible:            _editingLayer === _layerMission && (ScreenTools.isMobile ? height < Screen.height * 0.25 : true)
+            visible:            _editingLayer === _layerMission && (_toolStripBottom + mapScale.height) < y && QGroundControl.corePlugin.options.showMissionStatus
         }
     } // QGCViewPanel
 

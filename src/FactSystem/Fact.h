@@ -71,6 +71,8 @@ public:
     Q_PROPERTY(bool         typeIsBool              READ typeIsBool                                         CONSTANT)
     Q_PROPERTY(bool         hasControl              READ hasControl                                         CONSTANT)
     Q_PROPERTY(bool         readOnly                READ readOnly                                           CONSTANT)
+    Q_PROPERTY(bool         writeOnly               READ writeOnly                                          CONSTANT)
+    Q_PROPERTY(bool         volatileValue           READ volatileValue                                      CONSTANT)
 
     /// Convert and validate value
     ///     @param convertOnly true: validate type conversion only, false: validate against meta data as well
@@ -118,6 +120,8 @@ public:
     bool            typeIsBool              (void) const { return type() == FactMetaData::valueTypeBool; }
     bool            hasControl              (void) const;
     bool            readOnly                (void) const;
+    bool            writeOnly               (void) const;
+    bool            volatileValue           (void) const;
 
     /// Returns the values as a string with full 18 digit precision if float/double.
     QString rawValueStringFullPrecision(void) const;

@@ -177,10 +177,11 @@ Item {
         title:          qsTr("Select KML File")
         selectExisting: true
         nameFilters:    [ qsTr("KML files (*.kml)") ]
-
+        fileExtension:  QGroundControl.settingsManager.appSettings.kmlFileExtension
 
         onAcceptedForLoad: {
             mapPolygon.loadKMLFile(file)
+            mapFitFunctions.fitMapViewportToMissionItems()
             close()
         }
     }
@@ -453,6 +454,7 @@ Item {
                         id:                 radiusField
                         text:               _circleRadius.toFixed(2)
                         onEditingFinished:  setRadiusFromDialog()
+                        inputMethodHints:   Qt.ImhFormattedNumbersOnly
                     }
                 }
 

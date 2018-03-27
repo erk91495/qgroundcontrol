@@ -44,11 +44,13 @@ QVariant PX4ParameterMetaData::_stringToTypedVariant(const QString& string, Fact
     case FactMetaData::valueTypeUint8:
     case FactMetaData::valueTypeUint16:
     case FactMetaData::valueTypeUint32:
+    case FactMetaData::valueTypeUint64:
         convertTo = QVariant::UInt;
         break;
     case FactMetaData::valueTypeInt8:
     case FactMetaData::valueTypeInt16:
     case FactMetaData::valueTypeInt32:
+    case FactMetaData::valueTypeInt64:
         convertTo = QVariant::Int;
         break;
     case FactMetaData::valueTypeFloat:
@@ -186,6 +188,20 @@ void PX4ParameterMetaData::loadParameterFactMetaDataFile(const QString& metaData
                     category = QStringLiteral("Standard");
                 }
 
+                bool volatileValue = false;
+                bool readOnly = false;
+                QString volatileStr = xml.attributes().value("volatile").toString();
+                if (volatileStr.compare(QStringLiteral("true")) == 0) {
+                    volatileValue = true;
+                    readOnly = true;
+                }
+                if (!volatileValue) {
+                    QString readOnlyStr = xml.attributes().value("readonly").toString();
+                    if (readOnlyStr.compare(QStringLiteral("true")) == 0) {
+                        readOnly = true;
+                    }
+                }
+
                 qCDebug(PX4ParameterMetaDataLog) << "Found parameter name:" << name << " type:" << type << " default:" << strDefault;
 
                 // Convert type from string to FactMetaData::ValueType_t
@@ -211,6 +227,8 @@ void PX4ParameterMetaData::loadParameterFactMetaDataFile(const QString& metaData
                     metaData->setName(name);
                     metaData->setCategory(category);
                     metaData->setGroup(factGroup);
+                    metaData->setReadOnly(readOnly);
+                    metaData->setVolatileValue(volatileValue);
                     
                     if (xml.attributes().hasAttribute("default") && !strDefault.isEmpty()) {
                         QVariant varDefault;
@@ -249,7 +267,7 @@ void PX4ParameterMetaData::loadParameterFactMetaDataFile(const QString& metaData
                             qCDebug(PX4ParameterMetaDataLog) << "Min:" << text;
 
                             QVariant varMin;
-                            if (metaData->convertAndValidateRaw(text, true /* convertOnly */, varMin, errorString)) {
+                            if (metaData->convertAndValidateRaw(text, false /* convertOnly */, varMin, errorString)) {
                                 metaData->setRawMin(varMin);
                             } else {
                                 qCWarning(PX4ParameterMetaDataLog) << "Invalid min value, name:" << metaData->name() << " type:" << metaData->type() << " min:" << text << " error:" << errorString;
@@ -260,7 +278,7 @@ void PX4ParameterMetaData::loadParameterFactMetaDataFile(const QString& metaData
                             qCDebug(PX4ParameterMetaDataLog) << "Max:" << text;
 
                             QVariant varMax;
-                            if (metaData->convertAndValidateRaw(text, true /* convertOnly */, varMax, errorString)) {
+                            if (metaData->convertAndValidateRaw(text, false /* convertOnly */, varMax, errorString)) {
                                 metaData->setRawMax(varMax);
                             } else {
                                 qCWarning(PX4ParameterMetaDataLog) << "Invalid max value, name:" << metaData->name() << " type:" << metaData->type() << " max:" << text << " error:" << errorString;
@@ -384,6 +402,17 @@ void PX4ParameterMetaData::loadParameterFactMetaDataFile(const QString& metaData
             }
         }
         xml.readNext();
+    }
+}
+
+FactMetaData* PX4ParameterMetaData::getMetaDataForFact(const QString& name, MAV_TYPE vehicleType)
+{
+    Q_UNUSED(vehicleType)
+
+    if (_mapParameterName2FactMetaData.contains(name)) {
+        return _mapParameterName2FactMetaData[name];
+    } else {
+        return NULL;
     }
 }
 

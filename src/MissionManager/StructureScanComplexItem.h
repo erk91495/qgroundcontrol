@@ -28,9 +28,8 @@ public:
     StructureScanComplexItem(Vehicle* vehicle, QObject* parent = NULL);
 
     Q_PROPERTY(CameraCalc*      cameraCalc                  READ cameraCalc                                                 CONSTANT)
-    Q_PROPERTY(Fact*            gimbalPitch                 READ gimbalPitch                                                CONSTANT)
-    Q_PROPERTY(Fact*            gimbalYaw                   READ gimbalYaw                                                  CONSTANT)
     Q_PROPERTY(Fact*            altitude                    READ altitude                                                   CONSTANT)
+    Q_PROPERTY(Fact*            structureHeight             READ structureHeight                                            CONSTANT)
     Q_PROPERTY(Fact*            layers                      READ layers                                                     CONSTANT)
     Q_PROPERTY(bool             altitudeRelative            READ altitudeRelative           WRITE setAltitudeRelative       NOTIFY altitudeRelativeChanged)
     Q_PROPERTY(int              cameraShots                 READ cameraShots                                                NOTIFY cameraShotsChanged)
@@ -38,23 +37,19 @@ public:
     Q_PROPERTY(double           cameraMinTriggerInterval    MEMBER _cameraMinTriggerInterval                                NOTIFY cameraMinTriggerIntervalChanged)
     Q_PROPERTY(QGCMapPolygon*   structurePolygon            READ structurePolygon                                           CONSTANT)
     Q_PROPERTY(QGCMapPolygon*   flightPolygon               READ flightPolygon                                              CONSTANT)
-    Q_PROPERTY(bool             yawVehicleToStructure       READ yawVehicleToStructure      WRITE setYawVehicleToStructure  NOTIFY yawVehicleToStructureChanged)    ///< true: vehicle yaws to point to structure, false: gimbal yaws to point to structure
 
     CameraCalc* cameraCalc  (void) { return &_cameraCalc; }
     Fact* altitude          (void) { return &_altitudeFact; }
+    Fact* structureHeight   (void) { return &_structureHeightFact; }
     Fact* layers            (void) { return &_layersFact; }
 
     bool            altitudeRelative        (void) const { return _altitudeRelative; }
     int             cameraShots             (void) const;
-    Fact*           gimbalPitch             (void) { return &_gimbalPitchFact; }
-    Fact*           gimbalYaw               (void) { return &_gimbalYawFact; }
     double          timeBetweenShots        (void);
     QGCMapPolygon*  structurePolygon        (void) { return &_structurePolygon; }
     QGCMapPolygon*  flightPolygon           (void) { return &_flightPolygon; }
-    bool            yawVehicleToStructure   (void) const { return _yawVehicleToStructure; }
 
     void setAltitudeRelative        (bool altitudeRelative);
-    void setYawVehicleToStructure   (bool yawVehicleToStructure);
 
     Q_INVOKABLE void rotateEntryPoint(void);
 
@@ -102,7 +97,6 @@ signals:
     void timeBetweenShotsChanged        (void);
     void cameraMinTriggerIntervalChanged(double cameraMinTriggerInterval);
     void altitudeRelativeChanged        (bool altitudeRelative);
-    void yawVehicleToStructureChanged   (bool yawVehicleToStructure);
 
 private slots:
     void _setDirty(void);
@@ -113,7 +107,7 @@ private slots:
     void _updateCoordinateAltitudes (void);
     void _rebuildFlightPolygon      (void);
     void _recalcCameraShots         (void);
-    void _resetGimbal               (void);
+    void _recalcLayerInfo           (void);
 
 private:
     void _setExitCoordinate(const QGeoCoordinate& coordinate);
@@ -135,23 +129,19 @@ private:
     double          _cameraMinTriggerInterval;
     double          _cruiseSpeed;
     CameraCalc      _cameraCalc;
-    bool            _yawVehicleToStructure;
 
     static QMap<QString, FactMetaData*> _metaDataMap;
 
     Fact    _altitudeFact;
+    Fact    _structureHeightFact;
     Fact    _layersFact;
-    Fact    _gimbalPitchFact;
-    Fact    _gimbalYawFact;
 
     static const char* _altitudeFactName;
+    static const char* _structureHeightFactName;
     static const char* _layersFactName;
-    static const char* _gimbalPitchFactName;
-    static const char* _gimbalYawFactName;
 
     static const char* _jsonCameraCalcKey;
     static const char* _jsonAltitudeRelativeKey;
-    static const char* _jsonYawVehicleToStructureKey;
 
     friend class StructureScanComplexItemTest;
 };

@@ -48,11 +48,6 @@ Rectangle {
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
-    ExclusiveGroup {
-        id: yawRadiosGroup
-        onCurrentChanged: missionItem.yawVehicleToStructure = yawVehicleRadio.checked
-    }
-
     Column {
         id:                 editorColumn
         anchors.margins:    _margin
@@ -86,33 +81,6 @@ Rectangle {
             sideDistanceLabel:      qsTr("Trigger Distance")
         }
 
-        GridLayout {
-            anchors.left:   parent.left
-            anchors.right:  parent.right
-            columnSpacing:  ScreenTools.defaultFontPixelWidth / 2
-            rowSpacing:     0
-            columns:        3
-            enabled:        missionItem.cameraCalc.cameraName === missionItem.cameraCalc.manualCameraName
-
-            Item { width: 1; height: 1 }
-            QGCLabel { text: qsTr("Pitch") }
-            QGCLabel { text: qsTr("Yaw") }
-
-            QGCLabel {
-                text:               qsTr("Gimbal")
-                Layout.fillWidth:   true
-            }
-            FactTextField {
-                fact:           missionItem.gimbalPitch
-                implicitWidth:  ScreenTools.defaultFontPixelWidth * 9
-            }
-
-            FactTextField {
-                fact:           missionItem.gimbalYaw
-                implicitWidth:  ScreenTools.defaultFontPixelWidth * 9
-            }
-        }
-
         SectionHeader {
             id:         scanHeader
             text:       qsTr("Scan")
@@ -131,13 +99,27 @@ Rectangle {
                 rowSpacing:     _margin
                 columns:        2
 
-                QGCLabel { text: qsTr("Layers") }
+                QGCLabel {
+                    text:       qsTr("Structure height")
+                    visible:    !missionItem.cameraCalc.isManualCamera
+                }
+                FactTextField {
+                    fact:               missionItem.structureHeight
+                    Layout.fillWidth:   true
+                    visible:            !missionItem.cameraCalc.isManualCamera
+                }
+
+                QGCLabel {
+                    text:       qsTr("# Layers")
+                    visible:    missionItem.cameraCalc.isManualCamera
+                }
                 FactTextField {
                     fact:               missionItem.layers
                     Layout.fillWidth:   true
+                    visible:            missionItem.cameraCalc.isManualCamera
                 }
 
-                QGCLabel { text: qsTr("Altitude") }
+                QGCLabel { text: qsTr("Bottom layer alt") }
                 FactTextField {
                     fact:               missionItem.altitude
                     Layout.fillWidth:   true
@@ -148,28 +130,6 @@ Rectangle {
                     checked:            missionItem.altitudeRelative
                     Layout.columnSpan:  2
                     onClicked:          missionItem.altitudeRelative = checked
-                }
-            }
-
-            QGCLabel { text: qsTr("Point camera to structure using:") }
-
-            RowLayout {
-                spacing: _margin
-
-                QGCRadioButton {
-                    id:             yawVehicleRadio
-                    text:           qsTr("Vehicle yaw")
-                    exclusiveGroup: yawRadiosGroup
-                    checked:        !!missionItem.yawVehicleToStructure
-                    enabled:        false
-                }
-
-                QGCRadioButton
-                {
-                    text:           qsTr("Gimbal yaw")
-                    exclusiveGroup: yawRadiosGroup
-                    checked:        !missionItem.yawVehicleToStructure
-                    enabled:        false
                 }
             }
 
